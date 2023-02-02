@@ -13,7 +13,7 @@ def end(end='\n'):
     print(" %.3f seconds   " % (time.time()-started),end=end,flush=True)
     started = time.time()
 def status(msg,end='\n'):
-    print("%s   " % msg,end=end)
+    print("%s   " % msg,end=end,flush=True)
 
 
 # language and model selection
@@ -52,13 +52,24 @@ def translator(l1, l2):
         try:
             tp = pipeline("translation", model=model)
             end()
-            return tp
+            return (tp,)
         except:
             pass
-    status("FAILED")
-    return None
+    status("INDIRECT")
+    return ()
 
-translators = {l1: {l2: t for l2 in langs if l1 != l2 for t in [t for t in [translator(l1, l2)] if t]} for l1 in langs}
+translators = {l1: {l2: translator(l1, l2) for l2 in langs if l1 != l2} for l1 in langs}
+for l1 in langs:
+    for l2 in langs:
+        if l1 != l2 and not translators[l1][l2]:
+            start("Indirect translation %s --> %s" % (l1, l2))
+            for l in langs:
+                if l not in (l1, l2) and len(translators[l1][l]) == 1 and len(translators[l][l2]) == 1:
+                    translators[l1][l2] = (translators[l1][l][0], translators[l][l2][0])
+                    status("%s --> %s --> %s" % (l1, l, l2))
+                    break
+            else:
+                status("FAILED")
 
 
 # web service
@@ -81,20 +92,19 @@ def hello_world(l1, l2, l1_text):
             "message" : "No translators found for L1 == %s and L2 == %s. Accessible L2 languages for L1 == %s are '%s'." % (repr(l1), repr(l2), repr(l1), "', '".join(l1_translators.keys()))
         }
     try:
-        max_length = 2*len(l1_text.split())
-        l2_text = translator(l1_text, max_length=max_length)[0]['translation_text']
-        return {
-            "status" : "OK",
-            "translation" : l2_text
-        }
+        while True:
+            max_length = 2*len(l1_text.split())
+            l2_text = translator[0](l1_text, max_length=max_length)[0]['translation_text']
+            translator = translator[1:]
+            if not translator:
+                return {
+                    "status" : "OK",
+                    "translation" : l2_text
+                }
+            l1_text = l2_text
     except BaseException as e:
         return {
             "status" : "ERROR",
             "error" : "EXCEPTION",
-            "debug" : """<table><tr><th>L1</th><td>%s</td></tr>
-<tr><th>L2</th><td>%s</td></tr>
-<tr><th>L1_text</th><td>%s</td></tr>
-</table>
-""" % (l1, l2, l1_text),
             "message" : str(e)
         }
