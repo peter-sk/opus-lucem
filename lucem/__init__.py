@@ -21,11 +21,11 @@ from .config import LANGS, MODEL_TEMPLATES
 
 start("Available languages")
 langs = sys.argv[1].split(",") if len(sys.argv) > 1 and "," in sys.argv[1] else LANGS
-status("'%s'" % "', '".join(langs))
+status(", ".join(langs))
 
 start("Available model templates")
 model_templates = sys.argv[2].split(",") if len(sys.argv) > 2 and "," in sys.argv[1] else MODEL_TEMPLATES
-status("'%s'" % "', '".join(model_templates))
+status(", ".join(model_templates))
 
 
 # load libraries
