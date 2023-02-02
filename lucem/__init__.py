@@ -45,15 +45,17 @@ end()
 
 # model building
 def translator(l1, l2):
+    start("Loading model for %s --> %s" % (l1, l2))
     for model_template in model_templates:
         model = model_template % (l1, l2)
-        start("Loading model %s" % model)
+        status(model, end='')
         try:
             tp = pipeline("translation", model=model)
             end()
             return tp
         except:
-            status("UNAVAILABLE")
+            pass
+    status("FAILED")
     return None
 
 translators = {l1: {l2: t for l2 in langs if l1 != l2 for t in [t for t in [translator(l1, l2)] if t]} for l1 in langs}
