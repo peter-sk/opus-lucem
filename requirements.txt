@@ -1,0 +1,6 @@
+flask
+gunicorn
+sacremoses
+sentencepiece
+tensorflow
+transformers
