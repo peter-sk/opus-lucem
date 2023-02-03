@@ -41,7 +41,10 @@ end()
 start("Loading flask library")
 from flask import Flask
 end()
-
+start("Loading langid library")
+import langid
+langid.set_languages(langs)
+end()
 
 # model building
 def translator(l1, l2):
@@ -77,6 +80,13 @@ app = Flask(__name__)
 
 @app.route("/<l1>/<l2>/<l1_text>", methods=['GET', 'POST'])
 def hello_world(l1, l2, l1_text):
+    if l1 == "auto":
+        l1 = langid.classify(l1_text)[0]
+    if l1 == l2:
+        return {
+            "status" : "OK",
+            "translation" : l1_text
+        }
     l1_translators = translators.get(l1, None)
     if l1_translators is None:
         return {

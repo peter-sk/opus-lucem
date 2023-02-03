@@ -1,4 +1,4 @@
-LANGS = ["en", "da", "de", "es", "fi", "fr", "no", "sv"]
+LANGS = ["en", "da", "de", "es", "fi", "fr", "no", "ru", "sv", "zh", "ar"]
 #LANGS = ["en", "da", "sv"]
 
 MODEL_TEMPLATES = [
