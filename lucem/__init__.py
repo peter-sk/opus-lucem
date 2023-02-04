@@ -36,7 +36,7 @@ import tensorflow as tf
 end()
 start("Loading transformers library")
 os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
-from transformers import pipeline, logging
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 end()
 start("Loading flask library")
 from flask import Flask
@@ -53,7 +53,7 @@ def translator(l1, l2):
         model = model_template % (l1, l2)
         status(model, end='')
         try:
-            tp = pipeline("translation", model=model)
+            tp = (AutoTokenizer.from_pretrained(model), AutoModelForSeq2SeqLM.from_pretrained(model))
             end()
             return (tp,)
         except:
@@ -103,8 +103,11 @@ def hello_world(l1, l2, l1_text):
         }
     try:
         while True:
-            max_length = 2*len(l1_text.split())
-            l2_text = translator[0](l1_text, max_length=max_length)[0]['translation_text']
+            tokenizer, model = translator[0]
+            l1_tokens = tokenizer(l1_text, return_tensors='pt')
+            max_length = 2*len(l1_tokens['input_ids'][0])
+            l2_tokens = model.generate(**l1_tokens, max_length=max_length)
+            l2_text = tokenizer.decode(l2_tokens[0], skip_special_tokens=True)
             translator = translator[1:]
             if not translator:
                 return {
