@@ -17,7 +17,7 @@ def status(msg,end='\n'):
 
 
 # language and model selection
-from .config import LANGS, MODEL_TEMPLATES, NUM_SEQUENCES
+from .config import LANGS, MODEL_TEMPLATES, NUM_SEQUENCES, DEBUG
 
 start("Available languages")
 langs = sys.argv[1].split(",") if len(sys.argv) > 1 and "," in sys.argv[1] else LANGS
@@ -78,29 +78,38 @@ for l1 in langs:
 # web service
 app = Flask(__name__)
 
+def ret(result):
+    if DEBUG:
+        print("result = %s", repr(result))
+    return result
+
 @app.route("/<l1>/<l2>/<l1_text>", methods=['GET', 'POST'])
-def hello_world(l1, l2, l1_text):
+def translate(l1, l2, l1_text):
+    if DEBUG:
+        print("request l1 = %s, l2 = %s, l1_text = %s" % (repr(l1), repr(l2), repr(l1_text)))
     if l1 == "auto":
         l1 = langid.classify(l1_text)[0]
+        if DEBUG:
+            print("detected l1 = %s" % repr(l1))
     if l1 == l2:
-        return {
+        return ret({
             "status" : "OK",
             "translation" : l1_text
-        }
+        })
     l1_translators = translators.get(l1, None)
     if l1_translators is None:
-        return {
+        return ret({
             "status" : "ERROR",
             "error" : "L1",
             "message" : "No translators found for L1 == %s. Accessible L1 languages are '%s'." % (repr(l1), "', '".join(translators.keys()))
-        }
+        })
     translator = l1_translators.get(l2, None)
     if translator is None:
-        return {
+        return ret({
             "status" : "ERROR",
             "error" : "L2",
             "message" : "No translators found for L1 == %s and L2 == %s. Accessible L2 languages for L1 == %s are '%s'." % (repr(l1), repr(l2), repr(l1), "', '".join(l1_translators.keys()))
-        }
+        })
     try:
         while True:
             tokenizer, model = translator[0]
@@ -108,16 +117,20 @@ def hello_world(l1, l2, l1_text):
             max_length = 2*len(l1_tokens['input_ids'][0])
             l2_tokens = model.generate(**l1_tokens, max_length=max_length, num_return_sequences=NUM_SEQUENCES)
             l2_texts = [tokenizer.decode(l2_tokens[i], skip_special_tokens=True) for i in range(NUM_SEQUENCES)]
+            if DEBUG:
+                print("translated l1 = %s, l2 = %s, l1_text = %s, l2_texts = %s" % (repr(l1), repr(l2), repr(l1_text), repr(l2_texts)))
             translator = translator[1:]
             if not translator:
-                return {
+                return ret({
                     "status" : "OK",
                     "translations" : l2_texts
-                }
+                })
             l1_text = l2_texts[0]
     except BaseException as e:
-        return {
+        return ret({
             "status" : "ERROR",
             "error" : "EXCEPTION",
             "message" : str(e)
-        }
+        })
+        if DEBUG:
+            raise e

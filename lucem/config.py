@@ -7,3 +7,5 @@ MODEL_TEMPLATES = [
 ]
 
 NUM_SEQUENCES = 3
+
+DEBUG = True
