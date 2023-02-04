@@ -17,7 +17,7 @@ def status(msg,end='\n'):
 
 
 # language and model selection
-from .config import LANGS, MODEL_TEMPLATES
+from .config import LANGS, MODEL_TEMPLATES, NUM_SEQUENCES
 
 start("Available languages")
 langs = sys.argv[1].split(",") if len(sys.argv) > 1 and "," in sys.argv[1] else LANGS
@@ -106,15 +106,15 @@ def hello_world(l1, l2, l1_text):
             tokenizer, model = translator[0]
             l1_tokens = tokenizer(l1_text, return_tensors='pt')
             max_length = 2*len(l1_tokens['input_ids'][0])
-            l2_tokens = model.generate(**l1_tokens, max_length=max_length)
-            l2_text = tokenizer.decode(l2_tokens[0], skip_special_tokens=True)
+            l2_tokens = model.generate(**l1_tokens, max_length=max_length, num_return_sequences=NUM_SEQUENCES)
+            l2_texts = [tokenizer.decode(l2_tokens[i], skip_special_tokens=True) for i in range(NUM_SEQUENCES)]
             translator = translator[1:]
             if not translator:
                 return {
                     "status" : "OK",
-                    "translation" : l2_text
+                    "translations" : l2_texts
                 }
-            l1_text = l2_text
+            l1_text = l2_texts[0]
     except BaseException as e:
         return {
             "status" : "ERROR",
