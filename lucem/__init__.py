@@ -20,11 +20,13 @@ def status(msg,end='\n'):
 from .config import LANGS, MODEL_TEMPLATES, NUM_SEQUENCES, DEBUG
 
 start("Available languages")
-langs = sys.argv[1].split(",") if len(sys.argv) > 1 and "," in sys.argv[1] else LANGS
+#langs = sys.argv[1].split(",") if len(sys.argv) > 1 and "," in sys.argv[1] else LANGS
+langs = LANGS
 status(" ".join(langs))
 
 start("Available model templates")
-model_templates = sys.argv[2].split(",") if len(sys.argv) > 2 and "," in sys.argv[1] else MODEL_TEMPLATES
+#model_templates = sys.argv[2].split(",") if len(sys.argv) > 2 and "," in sys.argv[1] else MODEL_TEMPLATES
+model_templates = MODEL_TEMPLATES
 status(" ".join(model_templates))
 
 
