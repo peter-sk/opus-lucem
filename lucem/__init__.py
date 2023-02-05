@@ -56,7 +56,7 @@ def translator(l1, l2):
         model = model_template % (l1, l2)
         status(model, end='')
         try:
-            tp = (AutoTokenizer.from_pretrained(model), AutoModelForSeq2SeqLM.from_pretrained(model).to(device))
+            tp = (AutoTokenizer.from_pretrained(model), AutoModelForSeq2SeqLM.from_pretrained(model))
             end()
             return (tp,)
         except:
@@ -83,6 +83,7 @@ app = Flask(__name__)
 
 def get_app(cuda=None):
     global device
+    start("Determining device to run inference on")
     if cuda is None:
         device = "cpu"
     else:
@@ -90,9 +91,13 @@ def get_app(cuda=None):
             device = "cuda"
         else:
             device = "cuda:" + cuda
-        for l1, l2t in translators.items():
-            for l2, t in l2t.items():
-                t[1] = t[1].to(device)
+    status(device)
+    if cuda:
+        start("Moving models to %s" % device)
+        for l1, l2ts in translators.items():
+            for l2, ts in l2ts.items():
+                l2ts[l2] = tuple((t[0],t[1].to(device)) for t in ts)
+        end()
     return app
 
 def ret(result):
