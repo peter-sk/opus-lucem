@@ -34,6 +34,9 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 end()
+start("Loading torch library")
+import torch
+end()
 start("Loading transformers library")
 os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -53,7 +56,7 @@ def translator(l1, l2):
         model = model_template % (l1, l2)
         status(model, end='')
         try:
-            tp = (AutoTokenizer.from_pretrained(model), AutoModelForSeq2SeqLM.from_pretrained(model))
+            tp = (AutoTokenizer.from_pretrained(model), AutoModelForSeq2SeqLM.from_pretrained(model).to(device))
             end()
             return (tp,)
         except:
@@ -77,6 +80,20 @@ for l1 in langs:
 
 # web service
 app = Flask(__name__)
+
+def get_app(cuda=None):
+    global device
+    if cuda is None:
+        device = "cpu"
+    else:
+        if cuda == "all":
+            device = "cuda"
+        else:
+            device = "cuda:" + cuda
+        for l1, l2t in translators.items():
+            for l2, t in l2t.items():
+                t[1] = t[1].to(device)
+    return app
 
 def ret(result):
     if DEBUG:
@@ -113,7 +130,7 @@ def translate(l1, l2, l1_text):
     try:
         while True:
             tokenizer, model = translator[0]
-            l1_tokens = tokenizer(l1_text, return_tensors='pt')
+            l1_tokens = tokenizer(l1_text, return_tensors='pt').to(device)
             max_length = 2*len(l1_tokens['input_ids'][0])
             l2_tokens = model.generate(**l1_tokens, max_length=max_length, num_return_sequences=NUM_SEQUENCES)
             l2_texts = [tokenizer.decode(l2_tokens[i], skip_special_tokens=True) for i in range(NUM_SEQUENCES)]
