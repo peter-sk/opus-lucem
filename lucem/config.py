@@ -4,7 +4,7 @@ SERVER_ARGS = {
 }
 
 APP_ARGS = {
-    "langs": "en,da,sv", #"en,da,de,es,fi,fr,no,ru,sv,zh,ar",
+    "langs": "en,da,de,es,fi,fr,no,ru,sv,zh,ar",
     "directions": "all",
     "model_templates": "Helsinki-NLP/opus-mt-tc-big-%s-%s,Helsinki-NLP/opus-mt-%s-%s",
     "num_sequences": 3,
