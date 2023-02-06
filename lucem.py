@@ -6,11 +6,10 @@ import torch
 import transformers
 
 
-app = flask.Flask(__name__)
 lucem = None
 
 
-class LuceM:
+class Lucem:
     def __init__(self, languages, gpu=False, debug=False):
         self._gpu = gpu
         self._debug = debug
@@ -100,36 +99,38 @@ class LuceM:
         return ()
 
 
-@app.route("/<l1>/<l2>/<l1_text>", methods=['GET'])
-def translate(l1, l2, l1_text):
-    return lucem.translate(l1, l2, l1_text)
+def create_app(languages=['da', 'en'], gpu=False, allow_tf32=False, allow_fp16=False, debug=False):
+    global lucem
+
+    if allow_tf32:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+
+    if allow_fp16:
+        torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
+
+    device_type = "cuda" if gpu else "cpu"
+    if lucem is None:
+        lucem = Lucem(gpu=gpu, debug=debug, languages=languages)
+
+    app = flask.Flask(__name__)
+    app.add_url_rule("/<l1>/<l2>/<l1_text>", methods=['GET'], view_func=lucem.translate)
+
+    return app
 
 
 def main():
-    global lucem
-    global app
     parser = argparse.ArgumentParser(description='Opus Lucem server')
     parser.add_argument('--port', metavar='PORT', type=int, default=8000, help='Listen on port')
     parser.add_argument('--gpu', action='store_true', default=False, help='Use GPU')
     parser.add_argument('--tf32', action='store_true', default=False, help='Allow use of TF32 (for GPU)')
     parser.add_argument('--fp16', action='store_true', default=False, help='Allow use of FP16 (for GPU)')
-    parser.add_argument('--amp', action='store_true', default=False, help='Enable autocasting (for GPU)')
     parser.add_argument('--debug', action='store_true', default=False, help='Enable debug messages')
-    parser.add_argument('language', metavar='LANG', nargs='+', help='List of languages to load')
+    parser.add_argument('languages', metavar='LANG', nargs='+', help='List of languages to load')
 
     args = parser.parse_args()
 
-    if args.tf32:
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
-
-    if args.fp16:
-        torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = True
-
-    device_type = "cuda" if args.gpu else "cpu"
-    with torch.autocast(device_type, enabled=args.amp):
-        lucem = LuceM(gpu=args.gpu, debug=args.debug, languages=args.language)
-        
+    app = create_app(languages=args.languages, gpu=args.gpu, allow_tf32=args.tf32, allow_fp16=args.fp16, debug=args.debug)        
     app.run(host='0.0.0.0', port=args.port)
 
 
