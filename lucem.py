@@ -119,18 +119,29 @@ def create_app(languages=['da', 'en'], gpu=False, allow_tf32=False, allow_fp16=F
     return app
 
 
+def gunicorn_app():
+    return create_app()
+
+
 def main():
     parser = argparse.ArgumentParser(description='Opus Lucem server')
     parser.add_argument('--port', metavar='PORT', type=int, default=8000, help='Listen on port')
     parser.add_argument('--gpu', action='store_true', default=False, help='Use GPU')
-    parser.add_argument('--tf32', action='store_true', default=False, help='Allow use of TF32 (for GPU)')
-    parser.add_argument('--fp16', action='store_true', default=False, help='Allow use of FP16 (for GPU)')
+    parser.add_argument('--allow-tf32', action='store_true', default=False, help='Allow use of TF32 (for GPU)')
+    parser.add_argument('--allow-fp16', action='store_true', default=False, help='Allow use of FP16 (for GPU)')
     parser.add_argument('--debug', action='store_true', default=False, help='Enable debug messages')
+    parser.add_argument('--threads', metavar='NUM', type=int, help='Override number of threads')
     parser.add_argument('languages', metavar='LANG', nargs='+', help='List of languages to load')
 
     args = parser.parse_args()
 
-    app = create_app(languages=args.languages, gpu=args.gpu, allow_tf32=args.tf32, allow_fp16=args.fp16, debug=args.debug)        
+    thread_count = args.threads
+    if thread_count is not None:
+        torch.set_num_threads(thread_count)
+
+    print("Number of threads: %d" % torch.get_num_threads())
+
+    app = create_app(languages=args.languages, gpu=args.gpu, allow_tf32=args.allow_tf32, allow_fp16=args.allow_fp16, debug=args.debug)
     app.run(host='0.0.0.0', port=args.port)
 
 
