@@ -101,7 +101,7 @@ class Lucem:
 
     def init_directions(self, directions):
         self._start("Directions of translations")
-        self.directions = {l1: [l2 for l2 in langs if l1 != l2] for l1 in langs} if directions == "all" else {ds[0]: [l2 for l2 in ds[1:] if ds[0] != l2] for l1l2s in directions.split(":") for ds in [l1l2s.split(",")]}
+        self.directions = {l1: [l2 for l2 in self.langs if l1 != l2] for l1 in self.langs} if directions == "all" else {ds[0]: [l2 for l2 in ds[1:] if ds[0] != l2] for l1l2s in directions.split(":") for ds in [l1l2s.split(",")]}
         self._status("directions=%s" % ":".join([",".join([l1]+ds) for l1, ds in self.directions.items()]))
 
     def init_verbosity(self, verbosity):
